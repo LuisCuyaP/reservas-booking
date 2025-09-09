@@ -1,19 +1,26 @@
-# "org" ensures this Service is used with the correct Serverless Framework Access Key.
 org: myorgluis
-# "service" is the name of this project. This will also be added to your AWS resource names.
+
 service: reservas
 
 provider:
   name: aws
   runtime: nodejs20.x
-  # Uncomment to easily set up a custom domain. Read the docs for more details:
-  # https://www.serverless.com/framework/docs/providers/aws/guide/domains
-  # domain: api.example.com
+  region: us-east-1
+  stage: ${opt:stage, 'local'}
+
+plugins:
+  - serverless-offline
 
 functions:
-  hello:
-    handler: handler.hello
+  ping:
+    handler: src/interfaces/http/ping.handler
     events:
       - httpApi:
-          path: /
+          path: /ping
+          method: get
+  getBooking:
+    handler: src/interfaces/http/get-booking.handler
+    events:
+      - httpApi:
+          path: /bookings/{id}
           method: get
