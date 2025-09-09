@@ -24,3 +24,10 @@ functions:
       - httpApi:
           path: /bookings/{id}
           method: get
+
+  postBookings:
+    handler: src/interfaces/http/post-bookings.handler
+    events:
+      - httpApi:
+          path: /bookings
+          method: post
