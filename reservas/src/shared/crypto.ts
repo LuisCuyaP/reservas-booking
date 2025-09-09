@@ -1,9 +1,3 @@
 import crypto from "crypto";
-
-export function sha256(s: string): string {
-  return crypto.createHash("sha256").update(s).digest("hex");
-}
-
-export function newUuid(): string {
-  return crypto.randomUUID(); // para bookingId, etc.
-}
+export const sha256 = (s:string) => crypto.createHash("sha256").update(s).digest("hex");
+export const newUuid = () => crypto.randomUUID();

@@ -29,10 +29,21 @@ functions:
       - httpApi:
           path: /bookings/{id}
           method: get
-
   postBookings:
     handler: src/interfaces/http/post-bookings.handler
     events:
       - httpApi:
           path: /bookings
           method: post
+  listByRoomDate:
+    handler: src/interfaces/http/list-by-room-date.handler
+    events:
+      - httpApi:
+          path: /rooms/{roomId}/bookings
+          method: get
+  deleteBooking:
+    handler: src/interfaces/http/delete-booking.handler
+    events:
+      - httpApi:
+          path: /bookings/{id}
+          method: delete          
