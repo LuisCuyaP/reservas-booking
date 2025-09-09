@@ -1,0 +1,28 @@
+version: "3.8"
+
+services:
+  localstack:
+    image: localstack/localstack:latest
+    container_name: localstack_booking
+    ports:
+      - "4566:4566"   # Edge (único endpoint para todos los servicios)
+      - "4510-4559:4510-4559"  # Puertos internos (algunos servicios los usan)
+      - "8080:8080"   # Dashboard (opcional)
+    environment:
+      - SERVICES=dynamodb,sqs,sns,events,s3
+      - DEBUG=1
+      - AWS_DEFAULT_REGION=us-east-1
+      # Persistencia (opcional pero recomendable)
+      - DATA_DIR=/var/lib/localstack/data
+      # Si usas Windows y ves problemas con DNS, habilita esto:
+      # - LOCALSTACK_HOST=localhost
+    volumes:
+      # Persistencia local de los datos de los servicios
+      - ./.localstack:/var/lib/localstack
+      # (Solo si fueras a ejecutar Lambdas dentro de LocalStack; para este proyecto NO hace falta ya que lo hacemos offline)
+      # - /var/run/docker.sock:/var/run/docker.sock
+    healthcheck:
+      test: ["CMD", "bash", "-c", "curl -s http://localhost:4566/_localstack/health | grep '\"initialized\": true'"]
+      interval: 10s
+      timeout: 5s
+      retries: 10

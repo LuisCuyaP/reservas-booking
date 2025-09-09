@@ -1,39 +1,33 @@
-import { json } from "../../shared/http";
-import { sha256, newUuid } from "../../shared/crypto";
-import { normalizeHeaders } from "../../shared/headers";
-import { validateCreateBookingDto } from "../../application/booking/dtos/create-booking.dto";
+import { PutCommand } from "@aws-sdk/lib-dynamodb";
+import { ddbDoc } from "../../infrastructure/aws/config/client";
 
-// Cache en memoria para Idempotency
-const idemStore = new Map<string, { hash: string; result: any }>();
 
 export const handler = async (event: any) => {
-  try {
-    const body = JSON.parse(event?.body ?? "{}");
-    validateCreateBookingDto(body);
+  const body = JSON.parse(event.body);
 
-    const headers = normalizeHeaders(event?.headers);
-    const idemKey = headers["idempotency-key"];
-    const requestHash = sha256(JSON.stringify(body));
+  const bookingId = crypto.randomUUID();
 
-    if (idemKey) {
-      const cached = idemStore.get(idemKey);
-      if (cached) {
-        if (cached.hash === requestHash) {
-          return json(201, cached.result);
-        }
-        return json(429, { error: "Idempotency key conflict" });
-      }
-    }
+  const item = {
+    PK: `ROOM#${body.roomId}#DATE#${body.start.replace(/-/g, "")}`,
+    SK: `BOOKING#${bookingId}`,
+    GSI1PK: `BOOKING#${bookingId}`,
+    bookingId,
+    roomId: body.roomId,
+    userId: body.userId,
+    start: body.start,
+    end: body.end,
+    note: body.note,
+    status: "PENDING",
+    createdAt: new Date().toISOString(),
+  };
 
-    const bookingId = newUuid();
-    const result = { bookingId, status: "PENDING" };
+  await ddbDoc.send(new PutCommand({
+    TableName: process.env.TABLE_NAME!,
+    Item: item,
+  }));
 
-    console.log("Event: BookingValidationRequested", { bookingId, ...body });
-
-    if (idemKey) idemStore.set(idemKey, { hash: requestHash, result });
-
-    return json(201, result);
-  } catch (err: any) {
-    return json(400, { error: err?.message || "Bad Request" });
-  }
+  return {
+    statusCode: 201,
+    body: JSON.stringify({ bookingId, status: "PENDING" }),
+  };
 };

@@ -7,6 +7,11 @@ provider:
   runtime: nodejs20.x
   region: us-east-1
   stage: ${opt:stage, 'local'}
+  environment:
+    TABLE_NAME: reservas-table-local
+    AWS_REGION: us-east-1
+    AWS_ENDPOINT_URL: http://localhost:4566
+    IS_OFFLINE: true
 
 plugins:
   - serverless-offline

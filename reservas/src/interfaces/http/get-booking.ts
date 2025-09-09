@@ -1,44 +1,24 @@
-type APIGatewayProxyResult = {
-  statusCode: number;
-  headers?: Record<string, string>;
-  body: string;
-};
+import { QueryCommand } from "@aws-sdk/lib-dynamodb";
+import { ddbDoc } from "../../infrastructure/aws/config/client";
 
-export const handler = async (event: any): Promise<APIGatewayProxyResult> => {
-  try {
-    const id = event?.pathParameters?.id;
-    if (!id) {
-      return resp(400, { error: "Missing path parameter 'id'" });
-    }
 
-    // --- MOCK DE RESPUESTA ---
-    // Simula un booking en estado PENDING (sin DB aún).
-    // Si quieres un "not found" rápido, devuelve 404 cuando id === "notfound".
-    if (id === "notfound") {
-      return resp(404, { error: "Booking not found" });
-    }
+export const handler = async (event: any) => {
+  const id = event.pathParameters?.id;
 
-    const mock = {
-      bookingId: id,
-      roomId: "R-101",
-      userId: "U-555",
-      start: "2025-09-08T10:00:00Z",
-      end: "2025-09-08T11:00:00Z",
-      note: "Reserva mock para pruebas",
-      status: "PENDING",
-      createdAt: new Date().toISOString()
-    };
+  const res = await ddbDoc.send(new QueryCommand({
+    TableName: process.env.TABLE_NAME!,
+    IndexName: "GSI1",
+    KeyConditionExpression: "GSI1PK = :g",
+    ExpressionAttributeValues: { ":g": `BOOKING#${id}` },
+    Limit: 1,
+  }));
 
-    return resp(200, mock);
-  } catch (err: any) {
-    return resp(500, { error: err?.message || "Internal error" });
+  if (!res.Items || res.Items.length === 0) {
+    return { statusCode: 404, body: JSON.stringify({ error: "Booking not found" }) };
   }
-};
 
-function resp(code: number, payload: any): APIGatewayProxyResult {
   return {
-    statusCode: code,
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
+    statusCode: 200,
+    body: JSON.stringify(res.Items[0]),
   };
-}
+};
